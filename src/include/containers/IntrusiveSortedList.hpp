@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (C) 2012-2019 PX4 Development Team. All rights reserved.
+ *   Copyright (C) 2020 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -42,26 +42,21 @@
 #include <stdlib.h>
 
 template<class T>
-class ListNode
+class IntrusiveSortedListNode
 {
 public:
-
-	void setSibling(T sibling) { _list_node_sibling = sibling; }
-	const T getSibling() const { return _list_node_sibling; }
-
+	void setSortedSibling(T sibling) { _sorted_list_node_sibling = sibling; }
+	const T getSortedSibling() const { return _sorted_list_node_sibling; }
 protected:
-
-	T _list_node_sibling{nullptr};
-
+	T _sorted_list_node_sibling{nullptr};
 };
 
 template<class T>
-class List
+class IntrusiveSortedList
 {
 public:
 
-	void add(T newNode) { addFront(newNode); }
-	void addFront(T newNode)
+	void add(T newNode)
 	{
 		if (_head == nullptr) {
 			// list is empty, add as head
@@ -69,31 +64,29 @@ public:
 			return;
 
 		} else {
-			newNode->setSibling(_head);
-			_head = newNode;
-		}
-	}
+			if (*newNode <= *_head) {
+				newNode->setSortedSibling(_head);
+				_head = newNode;
+				return;
+			}
 
-	void addBack(T newNode)
-	{
-		if (_head == nullptr) {
-			// list is empty, add as head
-			_head = newNode;
-			return;
-
-		} else {
 			// find last node and add to end
 			T node = _head;
 
-			while (node != nullptr) {
-				if (node->getSibling() == nullptr) {
-					// found last node, now add newNode
-					node->setSibling(newNode);
+			while (node != nullptr && node->getSortedSibling() != nullptr) {
+
+				if (*newNode <= *node->getSortedSibling()) {
+					// insert newNode
+					newNode->setSortedSibling(node->getSortedSibling());
+					node->setSortedSibling(newNode);
 					return;
 				}
 
-				node = node->getSibling();
+				node = node->getSortedSibling();
 			}
+
+			// reached the end, add
+			node->setSortedSibling(newNode);
 		}
 	}
 
@@ -106,26 +99,26 @@ public:
 		// base case
 		if (removeNode == _head) {
 			if (_head != nullptr) {
-				_head = _head->getSibling();
+				_head = _head->getSortedSibling();
 			}
 
-			removeNode->setSibling(nullptr);
+			removeNode->setSortedSibling(nullptr);
 
 			return true;
 		}
 
-		for (T node = getHead(); node != nullptr; node = node->getSibling()) {
+		for (T node = _head; node != nullptr; node = node->getSortedSibling()) {
 			// is sibling the node to remove?
-			if (node->getSibling() == removeNode) {
+			if (node->getSortedSibling() == removeNode) {
 				// replace sibling
-				if (node->getSibling() != nullptr) {
-					node->setSibling(node->getSibling()->getSibling());
+				if (node->getSortedSibling() != nullptr) {
+					node->setSortedSibling(node->getSortedSibling()->getSortedSibling());
 
 				} else {
-					node->setSibling(nullptr);
+					node->setSortedSibling(nullptr);
 				}
 
-				removeNode->setSibling(nullptr);
+				removeNode->setSortedSibling(nullptr);
 
 				return true;
 			}
@@ -144,25 +137,23 @@ public:
 		Iterator &operator++ ()
 		{
 			if (node) {
-				node = node->getSibling();
+				node = node->getSortedSibling();
 			};
 
 			return *this;
 		}
 	};
 
-	Iterator begin() { return Iterator(getHead()); }
+	Iterator begin() { return Iterator(_head); }
 	Iterator end() { return Iterator(nullptr); }
 
-	const T getHead() const { return _head; }
-
-	bool empty() const { return getHead() == nullptr; }
+	bool empty() const { return _head == nullptr; }
 
 	size_t size() const
 	{
 		size_t sz = 0;
 
-		for (auto node = getHead(); node != nullptr; node = node->getSibling()) {
+		for (T node = _head; node != nullptr; node = node->getSortedSibling()) {
 			sz++;
 		}
 
@@ -179,10 +170,10 @@ public:
 
 	void clear()
 	{
-		auto node = getHead();
+		T node = _head;
 
 		while (node != nullptr) {
-			auto next = node->getSibling();
+			T next = node->getSibling();
 			delete node;
 			node = next;
 		}

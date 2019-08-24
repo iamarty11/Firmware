@@ -384,14 +384,7 @@ static void print_load_callback(void *user)
 void print_load(uint64_t t, int fd, struct print_load_s *print_state)
 {
 	/* print system information */
-	if (fd == 1) {
-		dprintf(fd, "\033[H"); /* move cursor home and clear screen */
-	}
-
-	struct print_load_callback_data_s data;
-
-	data.fd = fd;
-
+	struct print_load_callback_data_s data = { .fd = fd };
 	print_load_buffer(t, data.buffer, sizeof(data.buffer), print_load_callback, &data, print_state);
 }
 

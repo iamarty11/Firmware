@@ -74,9 +74,6 @@ top_main(int argc, char *argv[])
 	struct print_load_s load;
 	init_print_load_s(curr_time, &load);
 
-	/* clear screen */
-	dprintf(1, "\033[2J\n");
-
 	if (argc > 1) {
 		if (!strcmp(argv[1], "once")) {
 			print_load(curr_time, 1, &load);
@@ -91,7 +88,9 @@ top_main(int argc, char *argv[])
 	}
 
 	for (;;) {
+		PX4_INFO_RAW("\033[H"); // move cursor to top left corner
 		print_load(curr_time, 1, &load);
+		PX4_INFO_RAW("\033[0J"); // clear the rest of the screen
 
 		/* Sleep 200 ms waiting for user input five times ~ 1s */
 		for (int k = 0; k < 5; k++) {
