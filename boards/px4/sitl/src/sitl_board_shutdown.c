@@ -40,13 +40,17 @@
 #include <px4_platform_common/tasks.h>
 #include <board_config.h>
 
+#if defined(BOARD_HAS_POWER_CONTROL)
 int board_register_power_state_notification_cb(power_button_state_notification_t cb)
 {
 	return 0;
 }
+#endif // BOARD_HAS_POWER_CONTROL
 
-int board_shutdown()
+#if defined(CONFIG_BOARDCTL_POWEROFF)
+int board_power_off(int status)
 {
-	px4_systemreset(false);
+	system_exit(0);
 	return 0;
 }
+#endif // CONFIG_BOARDCTL_POWEROFF
