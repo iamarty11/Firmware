@@ -949,8 +949,7 @@ param_get_default_file()
 	return (param_user_file != nullptr) ? param_user_file : param_default_file;
 }
 
-int
-param_save_default()
+int param_save_default()
 {
 	int res = PX4_ERROR;
 
@@ -965,11 +964,14 @@ param_save_default()
 		return res;
 	}
 
+	px4_shutdown_lock();
+
 	/* write parameters to temp file */
 	int fd = PARAM_OPEN(filename, O_WRONLY | O_CREAT, PX4_O_MODE_666);
 
 	if (fd < 0) {
 		PX4_ERR("failed to open param file: %s", filename);
+		px4_shutdown_unlock();
 		return PX4_ERROR;
 	}
 
@@ -990,6 +992,8 @@ param_save_default()
 	}
 
 	PARAM_CLOSE(fd);
+
+	px4_shutdown_unlock();
 
 	return res;
 }
